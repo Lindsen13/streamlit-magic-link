@@ -1,0 +1,1 @@
+from src.magiclink import StreamlitMagicLink
