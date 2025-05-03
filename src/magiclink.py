@@ -63,7 +63,7 @@ class StreamlitMagicLink:
 
     def authenticate(self, email: str) -> None:
         """Authenticates the user by generating a magic link and sending it to the user's email."""
-        self._send_magic_link(email, self.base_url)
+        self._send_magic_link(email)
         st.toast(f"A magic link has been sent to {email}. Please check your inbox.", icon=":material/check:")
 
     def sign_in(self) -> None:
@@ -180,11 +180,11 @@ class StreamlitMagicLink:
             return False
         return True
 
-    def _send_magic_link(self, email: str, base_url: str) -> None:
+    def _send_magic_link(self, email: str) -> None:
         """
         Send a magic link to the user.
         """
         user = create_or_retrieve_user(self.mongo_client, email)
         magic_link = insert_magic_link(self.mongo_client, user.id)
         # Here you would send the magic link to the user's email
-        print(f"Magic link sent to {email}: {base_url}?token={magic_link.token}")
+        print(f"Magic link sent to {email}: {self.base_url}?token={magic_link.token}")
