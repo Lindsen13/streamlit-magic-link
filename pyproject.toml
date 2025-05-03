@@ -1,0 +1,3 @@
+[[tool.mypy.overrides]]
+module = ["streamlit_cookies_controller.*"]
+follow_untyped_imports = true

@@ -72,7 +72,7 @@ def test_delete_user()-> None:
     """
     Test the delete_user function.
     """
-    client: mongomock.Mongoclient = mongomock.MongoClient()
+    client: mongomock.MongoClient = mongomock.MongoClient()
     user = User(email="sample@mail.com")
     insert_user(client, user)
 
