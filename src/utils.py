@@ -86,10 +86,7 @@ def insert_magic_link(client: MongoClient, user_id: str) -> MagicLink:
     magic_links = get_magic_link_collection(client)
 
     magic_link = MagicLink(user_id=user_id)
-    if magic_links.find_one({"token": magic_link.token}):
-        print(f"Magic link with token {magic_link.token} already exists.")
-    else:
-        magic_links.insert_one(magic_link.model_dump())
+    magic_links.insert_one(magic_link.model_dump())
     return magic_link
 
 

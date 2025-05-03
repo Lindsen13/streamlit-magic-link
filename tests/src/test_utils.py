@@ -10,7 +10,7 @@ from src.utils import (
     get_magic_link_by_token,
     update_magic_link,
 )
-from src.models import User
+from src.models import User, MagicLink
 
 
 def test_insert_user()-> None:
@@ -25,6 +25,17 @@ def test_insert_user()-> None:
     assert retrieved_user is not None
     assert retrieved_user.id == inserted_user.id
     assert retrieved_user.email == inserted_user.email
+
+def test_insert_user_duplicate_user()-> None:
+    """
+    Test the insert_user function.
+    """
+    client: mongomock.MongoClient = mongomock.MongoClient()
+    user = User(email="sample@mail.com")
+    inserted_user = insert_user(client, user)
+
+    newly_inserted_user = insert_user(client, inserted_user)
+    assert newly_inserted_user == inserted_user
 
 def test_get_user_by_id()-> None:
     """
@@ -67,6 +78,17 @@ def test_update_user()-> None:
     assert updated_user.email == "updated@mail.com"
     assert client["streamlit-magic-link"]["users"].find_one({"email": "updated@mail.com"}) is not None
 
+def test_update_user_no_user_found()-> None:
+    """
+    Test the update_user function.
+    """
+    client: mongomock.MongoClient = mongomock.MongoClient()
+    user = User(email="sample@mail.com")
+
+    user.email = "updated@mail.com"
+    updated_user = update_user(client, user)
+
+    assert updated_user is None
 
 def test_delete_user()-> None:
     """
@@ -82,6 +104,15 @@ def test_delete_user()-> None:
     assert get_user_by_id(client, user.id) is None
     assert client["streamlit-magic-link"]["users"].find_one({"email": "sample@mail.com"}) is None
 
+def test_delete_user_no_user_found()-> None:
+    """
+    Test the delete_user function.
+    """
+    client: mongomock.MongoClient = mongomock.MongoClient()
+    user = User(email="sample@mail.com")
+
+    deleted_user = delete_user(client, user)
+    assert deleted_user is None
 
 def test_create_or_retrieve_user()-> None:
     """
@@ -112,7 +143,6 @@ def test_insert_magic_link()-> None:
     assert get_magic_link_by_token(client, magic_link.token) is not None
     assert client["streamlit-magic-link"]["magic-links"].find_one({"token": magic_link.token}) is not None
 
-
 def test_get_magic_link_by_token()-> None:
     """
     Test the get_magic_link_by_token function.
@@ -140,3 +170,16 @@ def test_update_magic_link():
     assert updated_magic_link is not None
     assert updated_magic_link.is_used
     assert client["streamlit-magic-link"]["magic-links"].find_one({"is_used": True}) is not None
+
+def test_update_magic_link_no_magic_link_found():
+    """
+    Test the update_magic_link function.
+    """
+    client: mongomock.MongoClient = mongomock.MongoClient()
+    user_id = "12345"
+    magic_link = MagicLink(user_id=user_id)
+
+    magic_link.is_used = True
+    updated_magic_link = update_magic_link(client, magic_link)
+
+    assert updated_magic_link is None
