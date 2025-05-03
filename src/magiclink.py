@@ -42,7 +42,7 @@ class StreamlitMagicLink:
         self,
         mongo_client: MongoClient,
         base_url: str,
-        cookie_controller: CookieController = None,
+        cookie_controller: Optional[CookieController] = None,
     ):
         """
         Initializes the MagicLinkAuth class

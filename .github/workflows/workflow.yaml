@@ -27,7 +27,7 @@ jobs:
         run: mypy .
 
       - name: Run ruff
-        run: ruff .
+        run: ruff check
 
       - name: Run pytest
         run: pytest
