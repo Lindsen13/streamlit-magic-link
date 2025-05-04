@@ -47,7 +47,6 @@ Here are some planned improvements and features for the Streamlit Magic Link pac
 
 - **Sending Emails**: Integrate email-sending functionality using services like Mailgun, SendGrid, or AWS SES to deliver magic links directly to users.
 - **Add Pytests**: Write comprehensive unit tests using `pytest` to ensure code reliability and maintainability.
-- **Error Handling and Logging**: Implement robust error handling and logging mechanisms to improve debugging and provide better feedback to developers.
 - **Add Documentation**: Expand the documentation with detailed examples, API references, and a troubleshooting guide.
 - **Package Distribution**: Prepare the package for distribution on PyPI, including creating a `setup.py` or `pyproject.toml` file and adding metadata.
 

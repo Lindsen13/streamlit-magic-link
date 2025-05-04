@@ -1,3 +1,5 @@
+import logging
+
 from datetime import datetime
 from typing import Optional, cast
 
@@ -15,6 +17,8 @@ from src.utils import (
     update_user,
     delete_user,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class StreamlitMagicLink:
@@ -64,13 +68,16 @@ class StreamlitMagicLink:
     def authenticate(self, email: str) -> None:
         """Authenticates the user by generating a magic link and sending it to the user's email."""
         self._send_magic_link(email)
-        st.toast(f"A magic link has been sent to {email}. Please check your inbox.", icon=":material/check:")
+        st.toast(
+            f"A magic link has been sent to {email}. Please check your inbox.",
+            icon=":material/check:",
+        )
 
     def sign_in(self) -> None:
         """Signs in a user"""
         token = st.query_params.get("token")
         if token:
-            print("Trying to sign in")
+            logging.info("Trying to sign in")
             user = self._handle_magic_link(token)
             if not user:
                 st.query_params.clear()
@@ -79,7 +86,6 @@ class StreamlitMagicLink:
                 self._set_user(user)
                 st.query_params.clear()
                 st.toast("You are now signed in.", icon=":material/check:")
-                
 
     def sign_out(self) -> None:
         """Signs out the current user"""
@@ -94,7 +100,7 @@ class StreamlitMagicLink:
         updated_user = update_user(self.mongo_client, User(**{**self.user, **kwargs}))
         if updated_user:
             self._set_user(updated_user)
-        
+
         st.toast("User updated successfully!", icon=":material/check:")
 
     def delete_user(self) -> None:
@@ -109,16 +115,16 @@ class StreamlitMagicLink:
     def _sync_user(self) -> None:
         """Sets the current user in the cookie. We do this ongoing, to ensure
         any changes to the user are reflected in the cookie.
-        This is useful for example when a backend process updates the user 
+        This is useful for example when a backend process updates the user
         in the database.
-        
+
         We remove the user from the cookie if the user is not found in the database.
         This is useful for example when the user is deleted from the database or if
         something went wrong.
         """
         if not self.user:
             return None
-        user = get_user_by_id(self.mongo_client, self.user['id'])
+        user = get_user_by_id(self.mongo_client, self.user["id"])
         if not user:
             self._remove_user()
             return None
@@ -145,7 +151,7 @@ class StreamlitMagicLink:
 
         user = get_user_by_id(self.mongo_client, magic_link.user_id)
         if not user:
-            print(f"User with id {magic_link.user_id} not found.")
+            logging.warning(f"User with id {magic_link.user_id} not found.")
             return None
 
         magic_link.is_used = True
@@ -170,13 +176,13 @@ class StreamlitMagicLink:
         model, which is not possible.
         """
         if not _magic_link:
-            print(f"Magic link with id {magic_link_id} not found.")
+            logging.warning(f"Magic link with id {magic_link_id} not found.")
             return False
         if _magic_link.is_used:
-            print(f"Magic link with id {magic_link_id} is already used.")
+            logging.warning(f"Magic link with id {magic_link_id} is already used.")
             return False
         if _magic_link.expiration_time < datetime.now():
-            print(f"Magic link with id {magic_link_id} is expired.")
+            logging.warning(f"Magic link with id {magic_link_id} is expired.")
             return False
         return True
 
@@ -187,4 +193,4 @@ class StreamlitMagicLink:
         user = create_or_retrieve_user(self.mongo_client, email)
         magic_link = insert_magic_link(self.mongo_client, user.id)
         # Here you would send the magic link to the user's email
-        print(f"Magic link sent to {email}: {self.base_url}?token={magic_link.token}")
+        logging.info(f"Magic link sent to {email}: {self.base_url}?token={magic_link.token}")
