@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 from pymongo.mongo_client import MongoClient
@@ -8,6 +9,8 @@ from src.db import (
 )
 from src.models import MagicLink, User
 
+logger = logging.getLogger(__name__)
+
 
 def insert_user(client: MongoClient, user: User) -> User:
     """
@@ -15,7 +18,7 @@ def insert_user(client: MongoClient, user: User) -> User:
     """
     users = get_user_collection(client)
     if users.find_one({"$or": [{"id": user.id}, {"email": user.email}]}):
-        print(f"User with id {user.id} or email {user.email} already exists.")
+        logger.warning(f"User with id {user.id} or email {user.email} already exists.")
     else:
         users.insert_one(user.model_dump())
     return user
@@ -28,7 +31,7 @@ def get_user_by_id(client: MongoClient, user_id: str) -> Optional[User]:
     users = get_user_collection(client)
     user = users.find_one({"id": user_id})
     if not user:
-        print(f"User with id {user_id} not found.")
+        logger.warning(f"User with id {user_id} not found.")
         return None
     return User(**user)
 
@@ -40,7 +43,7 @@ def get_user_by_email(client: MongoClient, email: str) -> Optional[User]:
     users = get_user_collection(client)
     user = users.find_one({"email": email})
     if not user:
-        print(f"User with email {email} not found.")
+        logger.warning(f"User with email {email} not found.")
         return None
     return User(**user)
 
@@ -52,7 +55,7 @@ def update_user(client: MongoClient, user: User) -> Optional[User]:
     users = get_user_collection(client)
     result = users.update_one({"id": user.id}, {"$set": user.model_dump()})
     if result.matched_count == 0:
-        print(f"User with id {user.id} not found.")
+        logger.warning(f"User with id {user.id} not found.")
         return None
     return get_user_by_id(client, user.id)
 
@@ -64,7 +67,7 @@ def delete_user(client: MongoClient, user: User) -> Optional[User]:
     users = get_user_collection(client)
     result = users.delete_one({"id": user.id})
     if result.deleted_count == 0:
-        print(f"User with id {user.id} not found.")
+        logger.warning(f"User with id {user.id} not found.")
         return None
     return user
 
@@ -97,7 +100,7 @@ def get_magic_link_by_token(client: MongoClient, token: str) -> Optional[MagicLi
     magic_links = get_magic_link_collection(client)
     magic_link = magic_links.find_one({"token": token})
     if not magic_link:
-        print(f"Magic link with token {token} not found.")
+        logger.warning(f"Magic link with token {token} not found.")
         return None
     return MagicLink(**magic_link)
 
@@ -113,6 +116,6 @@ def update_magic_link(
         {"token": magic_link.token}, {"$set": magic_link.model_dump()}
     )
     if result.matched_count == 0:
-        print(f"Magic link with token {magic_link.token} not found.")
+        logger.warning(f"Magic link with token {magic_link.token} not found.")
         return None
     return get_magic_link_by_token(client, magic_link.token)
