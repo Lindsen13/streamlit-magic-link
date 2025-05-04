@@ -46,7 +46,6 @@ You can customize the behavior of the package by passing configuration options:
 Here are some planned improvements and features for the Streamlit Magic Link package:
 
 - **Sending Emails**: Integrate email-sending functionality using services like Mailgun, SendGrid, or AWS SES to deliver magic links directly to users.
-- **Add Pytests**: Write comprehensive unit tests using `pytest` to ensure code reliability and maintainability.
 - **Add Documentation**: Expand the documentation with detailed examples, API references, and a troubleshooting guide.
 - **Package Distribution**: Prepare the package for distribution on PyPI, including creating a `setup.py` or `pyproject.toml` file and adding metadata.
 
