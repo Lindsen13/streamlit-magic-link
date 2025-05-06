@@ -1,5 +1,5 @@
 import logging
-
+import time
 from datetime import datetime
 from typing import Optional, cast
 
@@ -7,15 +7,16 @@ import streamlit as st
 from pymongo.mongo_client import MongoClient
 from streamlit_cookies_controller import CookieController
 
+from src.mail import send_email
 from src.models import MagicLink, User
 from src.utils import (
     create_or_retrieve_user,
+    delete_user,
     get_magic_link_by_token,
     get_user_by_id,
     insert_magic_link,
     update_magic_link,
     update_user,
-    delete_user,
 )
 
 logger = logging.getLogger(__name__)
@@ -90,6 +91,7 @@ class StreamlitMagicLink:
     def sign_out(self) -> None:
         """Signs out the current user"""
         self._remove_user()
+        st.rerun()
         st.toast("You are now signed out.", icon=":material/check:")
 
     def update_user(self, **kwargs) -> None:
@@ -135,9 +137,13 @@ class StreamlitMagicLink:
         self.cookie_controller.set("user", user.model_dump())
 
     def _remove_user(self) -> None:
-        """Removes the current user from the cookie"""
+        """Removes the current user from the cookie
+        
+        We are adding a sleep here to ensure that the cookie is removed
+        before the next rerun of the Streamlit app."""
         self.cookie_controller.remove("user")
-
+        time.sleep(1)
+    
     def _handle_magic_link(self, magic_link_id: str) -> Optional[User]:
         """
         Validate a magic link by its ID, and return the user if valid.
@@ -192,5 +198,10 @@ class StreamlitMagicLink:
         """
         user = create_or_retrieve_user(self.mongo_client, email)
         magic_link = insert_magic_link(self.mongo_client, user.id)
-        # Here you would send the magic link to the user's email
+        
+        send_email(
+            to_email=email,
+            body=f"Click the link to sign in: {self.base_url}?token={magic_link.token}",
+            subject="Your Magic Link",
+        )
         logging.info(f"Magic link sent to {email}: {self.base_url}?token={magic_link.token}")

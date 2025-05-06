@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import mongomock
 
 from src.magiclink import StreamlitMagicLink
-from src.models import User
+from src.models import User, MagicLink
 from src.utils import (
     get_user_by_email,
     get_user_by_id,
@@ -52,14 +52,28 @@ def test_authenticate() -> None:
     mongo_client: mongomock.MongoClient = mongomock.MongoClient()
     base_url = "https://example.com"
 
+    fake_magic_link_token = "fake_token"
+    sample_user = _set_user(mongo_client)
+
     magic_link_auth = StreamlitMagicLink(mongo_client, base_url)
 
-    sample_mail = "sample@mail.com"
-    with patch("src.magiclink.st.toast") as mock_toast:
-        magic_link_auth.authenticate(sample_mail)
+    with (
+        patch("src.magiclink.st.toast") as mock_toast,
+        patch("src.magiclink.send_email") as mock_send_email,
+        patch("src.magiclink.insert_magic_link") as mock_insert_magic_link,
+    ):
+        mock_insert_magic_link.return_value = MagicLink(
+            token=fake_magic_link_token, user_id=sample_user.id
+        )
+        magic_link_auth.authenticate(sample_user.email)
         mock_toast.assert_called_once_with(
-            f"A magic link has been sent to {sample_mail}. Please check your inbox.",
+            f"A magic link has been sent to {sample_user.email}. Please check your inbox.",
             icon=":material/check:",
+        )
+        mock_send_email.assert_called_once_with(
+            to_email=sample_user.email,
+            body=f"Click the link to sign in: {base_url}?token={fake_magic_link_token}",
+            subject="Your Magic Link",
         )
 
 
@@ -295,6 +309,21 @@ def test_remove_user() -> None:
     assert cookie_controller.remove.called_once_with("user", sample_user.model_dump())
 
 
+def test_remove_user_time_sleep() -> None:
+    """Test removing user, with a time sleep.
+
+    It is crucial that we add a time.sleep here to ensure that the cookie is removed
+    before the next rerun of the Streamlit app.
+    """
+    magic_link_auth = StreamlitMagicLink(
+        mongomock.MongoClient(), "https://example.com", MagicMock()
+    )
+
+    with patch("src.magiclink.time.sleep") as mock_sleep:
+        magic_link_auth._remove_user()
+        mock_sleep.assert_called_once_with(1)
+
+
 def test_handle_magic_link() -> None:
     """Test handling a magic link."""
     mongo_client: mongomock.MongoClient = mongomock.MongoClient()
@@ -324,6 +353,7 @@ def test_handle_magic_link_invalid_token() -> None:
 
     assert retrieved_user is None
 
+
 def test_handle_magic_link_expired_token() -> None:
     """Test handling a magic link with an expired token."""
     mongo_client: mongomock.MongoClient = mongomock.MongoClient()
@@ -341,6 +371,7 @@ def test_handle_magic_link_expired_token() -> None:
 
     assert retrieved_user is None
 
+
 def test_handle_magic_link_without_user() -> None:
     """Test handling a magic link without a user."""
     mongo_client: mongomock.MongoClient = mongomock.MongoClient()
@@ -354,6 +385,7 @@ def test_handle_magic_link_without_user() -> None:
     retrieved_user = magic_link_auth._handle_magic_link(magic_link.token)
 
     assert retrieved_user is None
+
 
 def test_validate_magic_link() -> None:
     """Test validating a magic link."""
@@ -384,6 +416,7 @@ def test_validate_magic_link_used_token() -> None:
 
     assert validated is False
 
+
 def test_validate_magic_link_expired_token() -> None:
     """Test validating a magic link with an expired token."""
     mongo_client: mongomock.MongoClient = mongomock.MongoClient()
@@ -399,6 +432,7 @@ def test_validate_magic_link_expired_token() -> None:
 
     assert validated is False
 
+
 def test_send_magic_link() -> None:
     """Test sending a magic link."""
     mongo_client: mongomock.MongoClient = mongomock.MongoClient()
@@ -407,15 +441,24 @@ def test_send_magic_link() -> None:
 
     magic_link_auth = StreamlitMagicLink(mongo_client, "")
 
-    magic_link_auth._send_magic_link(email)
+    with patch("src.magiclink.send_email") as mock_send_email:
+        magic_link_auth._send_magic_link(email)
 
-    created_user = get_user_by_email(mongo_client, email)
-    assert created_user is not None
-    assert created_user.email == email
+        created_user = get_user_by_email(mongo_client, email)
+        assert created_user is not None
+        assert created_user.email == email
 
-    created_magic_link = mongo_client["streamlit-magic-link"]["magic-links"].find_one()
-    assert created_magic_link is not None
-    assert created_magic_link["user_id"] == created_user.id
+        created_magic_link = mongo_client["streamlit-magic-link"][
+            "magic-links"
+        ].find_one()
+        assert created_magic_link is not None
+        assert created_magic_link["user_id"] == created_user.id
+
+        assert mock_send_email.called_once_with(
+            to_email=email,
+            body=f"Click the link to sign in: ?token={created_magic_link['token']}",
+            subject="Your Magic Link",
+        )
 
 
 def _set_user(
