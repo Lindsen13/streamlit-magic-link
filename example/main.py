@@ -44,27 +44,28 @@ else:
         if st.button("Sign out"):
             magic_link.sign_out()
 
+
     with st.container(border=True):
         email = st.text_input(
             "Email",
-            magic_link.user["email"] if magic_link.user["email"] else "",
+            magic_link.user.get("email") if magic_link.user.get("email") else "",
         )
         name = st.text_input(
             "Name",
-            magic_link.user["name"] if magic_link.user["name"] else "",
+            magic_link.user.get("name") if magic_link.user.get("name") else "",
         )
 
         is_payed_user = st.checkbox(
             "Is payed user",
-            value=magic_link.user["is_payed_user"]
-            if magic_link.user["is_payed_user"]
+            value=magic_link.user.get("is_payed_user")
+            if magic_link.user.get("is_payed_user")
             else False,
         )
 
         additional_data = st.text_input(
             "Additional data",
-            magic_link.user["additional_data"]
-            if magic_link.user["additional_data"]
+            magic_link.user.get("additional_data")
+            if magic_link.user.get("additional_data")
             else "",
         )
 
@@ -78,3 +79,8 @@ else:
 
         if st.button("Delete user", type="primary"):
             magic_link.delete_user()
+
+
+st.write(magic_link.cookie_controller.getAll())
+
+st.write(st.session_state)
