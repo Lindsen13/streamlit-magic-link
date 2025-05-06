@@ -79,8 +79,3 @@ else:
 
         if st.button("Delete user", type="primary"):
             magic_link.delete_user()
-
-
-st.write(magic_link.cookie_controller.getAll())
-
-st.write(st.session_state)
